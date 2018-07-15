@@ -1,11 +1,27 @@
+"""
+Basic usage:
+  python readerbot.py config_file
+
+Add arguments `test` to block any posting, and `force_run` to prevent deciding
+not to post, e.g.:
+
+  python readerbot.py config_file test
+  python readerbot.py config_file force_run
+  python readerbot.py config_file test force_run
+
+Dependencies needed:
+  pip install tweepy
+"""
+
+import csv
+import hashlib
+import random
+import sys
 import tweepy
 import urllib2
-import csv
-import sys
-import random
 
-# INSTALLED:
-# pip install tweepy
+from datetime import datetime, timedelta
+
 
 # TODO: Move sheet ID to the config file
 READ_DATA_SHEET_ID = "193ip3sbePZb1kLdFA60VzbpeCzSwX7BD5dzPxsfM28Q"
@@ -101,13 +117,16 @@ class BookCollection(object):
 
     def current_read_msg(self):
         if not len(self._in_progress):
-            raise ValueError("Empty in-progress list!")
-        book = self._in_progress[random.randint(0, len(self._in_progress) -1)]
+            print "Empty in-progress list!"
+            # This is a hack; sending a too-long message keeps it from tweeting
+            return "A" * 30000
+        book = self._in_progress[random.randint(0, len(self._in_progress) - 1)]
         days_left = int(book.pages_to_go()/self._page_rate) + 1
-        return ("#ReaderBot: Brian is %s '%s' and should " +
+        return ("#ReaderBot: Brian is %s %s and should " +
                 "finish in around %d days https://goo.gl/pEH6yP") % (
                     book.rounded_ratio(), book.title(), days_left)
 
+    # TODO: pretty-print num pages
     def page_rate_msg(self):
         return ("#ReaderBot: Brian has read %d pages since " +
                 "Nov 12, 2016, or %0.0f pages per day " +
@@ -148,11 +167,40 @@ def get_auth(config_file):
     return auth
 
 
+def is_lucky_hour(dt, threshold=0.03):
+    "Is the modulo-hash of the given datetime's YYYYMMDDHH string low enough?"
+    denom = (2 ** 20)
+    dt_str = dt.strftime("%Y%m%d%H")
+    hash_val = int(hashlib.sha1(dt_str).hexdigest(), 16)
+    mod_hash_val = hash_val % denom
+    return mod_hash_val < (threshold * denom)
+
+
+def decide_to_post():
+    "Is this currently a lucky hour?  Have we had a lucky hour in the last day?"
+    thresh = 0.016
+    dtime = datetime.now()
+    now_is_lucky = is_lucky_hour(dtime, threshold=thresh)
+    if not now_is_lucky:
+        print "Not a lucky hour:", dtime
+        return False
+
+    recent_lucky = False
+    one_hour = timedelta(hours=1)
+    for hr in range(48):
+        dtime -= one_hour
+        if is_lucky_hour(dtime, threshold=thresh):
+            recent_lucky = True
+            print "Rate-limit blocked posting at ", datetime.now()
+            print "Lucky hour detected at", dtime
+            break
+
+    return now_is_lucky and not recent_lucky
+
+
 def main():
-    # Let's have this trigger 12 times per day, seven days per week,
-    # but only tweet like twice per week.  12*7 = 72; ~1/36
-    if "force_run" not in sys.argv and random.random() > 0.03:
-        print "No need to do anything this time."
+    if not decide_to_post() and "force_run" not in sys.argv:
+        print "Decided not to post."
         sys.exit(0)
 
     tuples = get_csv_tuples()
@@ -161,19 +209,19 @@ def main():
     r = 1
     for candidate in library.messages():
         new_r = random.random()
-        if len(candidate) < 140 and new_r < r:
+        if len(candidate) < 270 and new_r < r:
             r = new_r
             msg = candidate
     if msg is None:
         raise ValueError("No valid messages found in candidate set %s" % (
                          str(library.messages()),))
-
     print msg
     print len(msg)
     auth = get_auth(sys.argv[1])
     api = tweepy.API(auth)
     if "test" not in sys.argv:
         api.update_status(msg)
+
 
 
 if __name__ == "__main__":
