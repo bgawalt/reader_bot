@@ -82,7 +82,9 @@ class BookCollection(object):
         self._pages_read = 0
         self._pages_total = 0
         for tid, t in enumerate(tuples):
+            # Parse the derived values from Column E
             if tid == 0:
+                # The first line is empty
                 continue
             elif tid == 1:
                 self._total = int(t[4])
@@ -112,7 +114,7 @@ class BookCollection(object):
 
     def num_to_go_msg(self):
         return ("#ReaderBot: Brian has %d books left on his reading list. " +
-                "He should finish them all by %s https://goo.gl/pEH6yP") % (
+                "He should finish them all by %s. https://goo.gl/pEH6yP") % (
                     len(self._books) - self._num_done, self._finish_date)
 
     def current_read_msg(self):
@@ -123,16 +125,16 @@ class BookCollection(object):
         book = self._in_progress[random.randint(0, len(self._in_progress) - 1)]
         days_left = int(book.pages_to_go()/self._page_rate) + 1
         return ("#ReaderBot: Brian is %s %s and should " +
-                "finish in around %d days https://goo.gl/pEH6yP") % (
+                "finish in around %d days. https://goo.gl/pEH6yP") % (
                     book.rounded_ratio(), book.title(), days_left)
 
-    # TODO: pretty-print num pages
     def page_rate_msg(self):
-        return ("#ReaderBot: Brian has read %d pages since " +
-                "Nov 12, 2016, or %0.0f pages per day " +
-                "(%0.1f books per month) "
-                "https://goo.gl/pEH6yP") % (
-                    self._pages_read, self._page_rate,
+        return ("#ReaderBot: Brian has read %s pages across %d books since " +
+                "Nov 12, 2016. That's %0.0f pages per day " +
+                "(%0.1f books per month). https://goo.gl/pEH6yP") % (
+                    "{:,}".format(self._pages_read),
+                    len(self._books) - self._num_done + len(self._in_progress),
+                    self._page_rate,
                     float(30 * self._num_done) / (self._num_days))
 
     def messages(self):
