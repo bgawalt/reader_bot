@@ -16,6 +16,17 @@ But sometimes it also just reports the total amount of reading I have planned
 for the near future, or the total amount of reading I've done since I started
 keeping track like this.
 
+I've set this script up to run automatically once per hour, though most hours it
+just decides not to send a tweet and exits immediately.  I've set the operating
+parameters so that there's around 6 days on average between each "#ReaderBot"
+tweet posted, with a guaranteed rate limit of at least two days between each
+tweet.
+
+If you'd like to also start using this, it should be pretty easy!  Just copy
+the above spreadsheet's layout in your own Google sheet.  The dumbest part is
+just getting the OAuth credentials in place, but if you tweet at, or email me
+(bgawalt at gmail), I could help you make it through that.
+
 ## Dependencies
 
 This bot uses the [Tweepy library](http://www.tweepy.org/), which I installed
@@ -37,5 +48,12 @@ ACCESS_KEY = [account key]
 
 where everything outside the brackets is repeated verbatim.
 
-You'll also need to specify, in `readerbot.py` itself, the path to the reading
-list CSV.  It's the big long alphanumeric string from the Google Sheets URL.
+You'll also need to specify, in `readerbot.py` itself, the data sheet ID for the
+reading list CSV.  It's the big long alphanumeric string from the Google Sheets
+URL, and it's stored as the constant `READ_DATA_SHEET_ID`.
+
+OH! And the messages themselves -- `num_to_go_msg()`, `current_read_msg()`,
+`page_rate_msg()` -- currently hardcode a shortlink to my own spreadsheet.
+
+My main #TODOs right now are, I suppose, to migrate both the sheet ID and the
+URL-for-message-inclusion into the configuration text file.
