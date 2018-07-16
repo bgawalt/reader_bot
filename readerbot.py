@@ -137,10 +137,6 @@ class BookCollection(object):
                     self._page_rate,
                     float(30 * self._num_done) / (self._num_days))
 
-    def messages(self):
-        return (self.num_to_go_msg(), self.current_read_msg(),
-                self.page_rate_msg())
-
 
 def get_csv_tuples():
     csv_file = urllib2.urlopen(urllib2.Request(READ_DATA_SHEET_URL))
@@ -200,6 +196,12 @@ def decide_to_post():
     return now_is_lucky and not recent_lucky
 
 
+def block_long_tweets(tweet):
+    if len(tweet) > 270:
+        return None
+    return tweet
+
+
 def main():
     if not decide_to_post() and "force_run" not in sys.argv:
         print "Decided not to post."
@@ -208,12 +210,13 @@ def main():
     tuples = get_csv_tuples()
     library = BookCollection(tuples)
     msg = None
-    r = 1
-    for candidate in library.messages():
-        new_r = random.random()
-        if len(candidate) < 270 and new_r < r:
-            r = new_r
-            msg = candidate
+    r = random.random()
+    if r < 0.5:
+        msg = block_long_tweets(library.current_read_msg())
+    elif msg is None and r < 0.75:
+        msg = block_long_tweets(library.page_rate_msg())
+    else:
+        msg = block_long_tweets(library.num_to_go_msg())
     if msg is None:
         raise ValueError("No valid messages found in candidate set %s" % (
                          str(library.messages()),))
@@ -223,7 +226,6 @@ def main():
     api = tweepy.API(auth)
     if "test" not in sys.argv:
         api.update_status(msg)
-
 
 
 if __name__ == "__main__":
