@@ -174,10 +174,11 @@ def is_lucky_hour(dt, threshold=0.03):
     return mod_hash_val < (threshold * denom)
 
 
-def decide_to_post():
+def decide_to_post(dtime=None):
     "Is this currently a lucky hour?  Have we had a lucky hour in the last day?"
     thresh = 0.016
-    dtime = datetime.now()
+    if dtime is None:
+        dtime = datetime.now()
     now_is_lucky = is_lucky_hour(dtime, threshold=thresh)
     if not now_is_lucky:
         print "Not a lucky hour:", dtime
@@ -203,6 +204,15 @@ def block_long_tweets(tweet):
 
 
 def main():
+    if "timetable" in sys.argv:
+        one_hour = timedelta(hours=1)
+        dtime = datetime.now()
+        for _ in range(500):
+            if decide_to_post(dtime):
+                print "\tWILL POST AT:", dtime
+            dtime += one_hour
+        sys.exit(0)
+
     if not decide_to_post() and "force_run" not in sys.argv:
         print "Decided not to post."
         sys.exit(0)
