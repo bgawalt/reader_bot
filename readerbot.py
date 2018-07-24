@@ -133,7 +133,7 @@ class BookCollection(object):
                 "Nov 12, 2016. That's %0.0f pages per day " +
                 "(%0.1f books per month). https://goo.gl/pEH6yP") % (
                     "{:,}".format(self._pages_read),
-                    len(self._books) - self._num_done + len(self._in_progress),
+                    self._num_done + len(self._in_progress),
                     self._page_rate,
                     float(30 * self._num_done) / (self._num_days))
 
