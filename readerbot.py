@@ -133,8 +133,7 @@ class BookCollection(object):
                 "Nov 12, 2016. That's %0.0f pages per day " +
                 "(%0.1f books per month). https://goo.gl/pEH6yP") % (
                     "{:,}".format(self._pages_read),
-                    self._num_done + len(self._in_progress),
-                    self._page_rate,
+                    self._num_done + len(self._in_progress), self._page_rate,
                     float(30 * self._num_done) / (self._num_days))
 
 
@@ -221,11 +220,11 @@ def main():
     library = BookCollection(tuples)
     msg = None
     r = random.random()
-    if r < 0.5:
+    if r < 0.8:
         msg = block_long_tweets(library.current_read_msg())
-    elif msg is None and r < 0.75:
+    if msg is None and r < 0.9:
         msg = block_long_tweets(library.page_rate_msg())
-    else:
+    if msg is None:
         msg = block_long_tweets(library.num_to_go_msg())
     if msg is None:
         raise ValueError("No valid messages found in candidate set %s" % (
