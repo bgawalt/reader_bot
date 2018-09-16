@@ -9,6 +9,10 @@ not to post, e.g.:
   python readerbot.py config_file force_run
   python readerbot.py config_file test force_run
 
+If you just want to know when to expect more posts, use the flag `timetable`
+
+  python readerbot.py timetable | grep POST
+
 Dependencies needed:
   pip install tweepy
 """
