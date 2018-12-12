@@ -168,7 +168,7 @@ def get_auth(config_file):
     return auth
 
 
-def is_lucky_hour(dt, threshold=0.03):
+def is_lucky_hour(dt, threshold):
     "Is the modulo-hash of the given datetime's YYYYMMDDHH string low enough?"
     denom = (2 ** 20)
     dt_str = dt.strftime("%Y%m%d%H")
@@ -179,7 +179,7 @@ def is_lucky_hour(dt, threshold=0.03):
 
 def decide_to_post(dtime=None):
     "Is this currently a lucky hour?  Have we had a lucky hour in the last day?"
-    thresh = 0.016
+    thresh = 0.012
     if dtime is None:
         dtime = datetime.now()
     now_is_lucky = is_lucky_hour(dtime, threshold=thresh)
@@ -202,6 +202,7 @@ def decide_to_post(dtime=None):
 
 def block_long_tweets(tweet):
     if len(tweet) > 270:
+        print "Blocked long tweet!!\n\t", tweet
         return None
     return tweet
 
