@@ -38,8 +38,8 @@ class Book(object):
         if len(row) < 3:
             raise ValueError("Invalid row: %s" + str(row),)
         self._title = row[0]
-        self._total = int(row[1])
-        self._read = int(row[2])
+        self._total = int(row[1].replace(",", ""))
+        self._read = int(row[2].replace(",", ""))
         if self._read > self._total:
             raise ValueError("Mismatch in Read and Total for row: %s" %
                              (str(row),))
@@ -91,11 +91,11 @@ class BookCollection(object):
                 # The first line is empty
                 continue
             elif tid == 1:
-                self._total = int(t[4])
+                self._total = int(t[4].replace(",", ""))
             elif tid == 2:
-                self._read = int(t[4])
+                self._read = int(t[4].replace(",", ""))
             elif tid == 3:
-                self._num_days = int(t[4])
+                self._num_days = int(t[4].replace(",", ""))
             elif tid == 4:
                 self._page_rate = float(t[4])
             elif tid == 5:
@@ -208,14 +208,13 @@ def block_long_tweets(tweet):
 
 
 def main():
-    if "timetable" in sys.argv:
-        one_hour = timedelta(hours=1)
-        dtime = datetime.now()
-        for _ in range(500):
-            if decide_to_post(dtime):
-                print "\tWILL POST AT:", dtime
-            dtime += one_hour
-        sys.exit(0)
+    one_hour = timedelta(hours=1)
+    dtime = datetime.now()
+    for _ in range(500):
+        if decide_to_post(dtime):
+            print "NEXT POST AT:", dtime
+            break
+        dtime += one_hour
 
     if not decide_to_post() and "force_run" not in sys.argv:
         print "Decided not to post."
