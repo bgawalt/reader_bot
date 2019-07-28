@@ -5,34 +5,50 @@ Basic usage:
 Add arguments `test` to block any posting, and `force_run` to prevent deciding
 not to post, e.g.:
 
-  python readerbot.py config_file test
-  python readerbot.py config_file force_run
-  python readerbot.py config_file test force_run
+  python readerbot.py config_file db_file test
+  python readerbot.py config_file db_file force_run
+  python readerbot.py config_file db_file test force_run
 
 If you just want to know when to expect more posts, use the flag `timetable`
 
   python readerbot.py timetable | grep POST
 
+DB schema:
+
+    CREATE TABLE IF NOT EXISTS posts(
+        BookTitle text,
+        Progress text,
+        FullMessage text,
+        TimestampSec integer
+    );)
+
 Dependencies needed:
   pip install tweepy
 """
 
+from __future__ import print_function
+
 import csv
 import hashlib
 import random
+import sqlite3
 import sys
+import time
 import tweepy
-import urllib2
+
+from urllib import request
 
 from datetime import datetime, timedelta
 
 
+# Spreadsheet read in one row as a time, as tuples.
 # TODO: Move sheet ID to the config file
 READ_DATA_SHEET_ID = "193ip3sbePZb1kLdFA60VzbpeCzSwX7BD5dzPxsfM28Q"
 READ_DATA_SHEET_URL = "https://spreadsheets.google.com/feeds/download/spreadsheets/Export?key=%s&exportFormat=csv" % READ_DATA_SHEET_ID
 
 
 class Book(object):
+    "Turns a row-tuple into a single book: title, total pages, and read pages."
 
     def __init__(self, row):
         if len(row) < 3:
@@ -79,12 +95,13 @@ class Book(object):
 
 class BookCollection(object):
 
-    def __init__(self, tuples):
+    def __init__(self, tuples, timestamp_sec):
         self._books = []
         self._in_progress = []
         self._num_done = 0
         self._pages_read = 0
         self._pages_total = 0
+        self._time = timestamp_sec
         for tid, t in enumerate(tuples):
             # Parse the derived values from Column E
             if tid == 0:
@@ -117,33 +134,54 @@ class BookCollection(object):
         return self._books
 
     def num_to_go_msg(self):
-        return ("#ReaderBot: Brian has %d books left on his reading list. " +
-                "He should finish them all by %s. https://goo.gl/pEH6yP") % (
-                    len(self._books) - self._num_done, self._finish_date)
+        msg = ("#ReaderBot: Brian has %d books left on his reading list. " +
+               "He should finish them all by %s. https://goo.gl/pEH6yP") % (
+                 len(self._books) - self._num_done, self._finish_date)
+        return Update("num_to_go", "num_to_go", msg, self._time)
 
     def current_read_msg(self):
         if not len(self._in_progress):
-            print "Empty in-progress list!"
-            # This is a hack; sending a too-long message keeps it from tweeting
-            return "A" * 30000
+            print("Empty in-progress list!")
+            return None
         book = self._in_progress[random.randint(0, len(self._in_progress) - 1)]
         days_left = int(book.pages_to_go()/self._page_rate) + 1
-        return ("#ReaderBot: Brian is %s %s and should " +
-                "finish in around %d days. https://goo.gl/pEH6yP") % (
+        msg = ("#ReaderBot: Brian is %s %s and should " +
+               "finish in around %d days. https://goo.gl/pEH6yP") % (
                     book.rounded_ratio(), book.title(), days_left)
+        return Update(book.title(), book.rounded_ratio(), msg, self._time)
 
     def page_rate_msg(self):
-        return ("#ReaderBot: Brian has read %s pages across %d books since " +
+        msg = ("#ReaderBot: Brian has read %s pages across %d books since " +
                 "Nov 12, 2016. That's %0.0f pages per day " +
                 "(%0.1f books per month). https://goo.gl/pEH6yP") % (
                     "{:,}".format(self._pages_read),
                     self._num_done + len(self._in_progress), self._page_rate,
                     float(30 * self._num_done) / (self._num_days))
+        return Update("page_rate", "page_rate", msg, self._time)
+
+
+class Update(object):
+
+    def __init__(self, book_title, progress, message, timestamp_sec):
+        self.book_title = book_title
+        self.progress = progress
+        self.message = message
+        self.time = int(timestamp_sec)
+
+    def ToTuple(self):
+        return (self.book_title, self.progress, self.message, self.time)
+
+    @staticmethod
+    def FromTuple(db_tuple):
+        title, prog, msg, time = db_tuple
+        return Update(title, prog, msg, time)
 
 
 def get_csv_tuples():
-    csv_file = urllib2.urlopen(urllib2.Request(READ_DATA_SHEET_URL))
-    return [t for t in csv.reader(csv_file)]
+    sheet_response = request.urlopen(READ_DATA_SHEET_URL)
+    encoding = sheet_response.headers.get_content_charset('utf-8')
+    sheet_lines = sheet_response.read().decode(encoding).split("\n")
+    return [t for t in csv.reader(sheet_lines)]
 
 
 def get_config(filename):
@@ -172,73 +210,94 @@ def is_lucky_hour(dt, threshold):
     "Is the modulo-hash of the given datetime's YYYYMMDDHH string low enough?"
     denom = (2 ** 20)
     dt_str = dt.strftime("%Y%m%d%H")
-    hash_val = int(hashlib.sha1(dt_str).hexdigest(), 16)
+    hash_val = int(hashlib.sha1(dt_str.encode('utf-8')).hexdigest(), 16)
     mod_hash_val = hash_val % denom
     return mod_hash_val < (threshold * denom)
 
 
-def decide_to_post(dtime=None):
-    "Is this currently a lucky hour?  Have we had a lucky hour in the last day?"
+def decide_to_post(dtime, prev_ts):
+    "Is this currently a lucky hour?  Have we posted recently?"
     thresh = 0.012
-    if dtime is None:
-        dtime = datetime.now()
-    now_is_lucky = is_lucky_hour(dtime, threshold=thresh)
-    if not now_is_lucky:
-        print "Not a lucky hour:", dtime
-        return False
-
-    recent_lucky = False
-    one_hour = timedelta(hours=1)
-    for hr in range(48):
-        dtime -= one_hour
-        if is_lucky_hour(dtime, threshold=thresh):
-            recent_lucky = True
-            print "Rate-limit blocked posting at ", datetime.now()
-            print "Lucky hour detected at", dtime
-            break
-
-    return now_is_lucky and not recent_lucky
+    curr_time = time.mktime(dtime.timetuple())
+    too_recent = (curr_time - prev_ts) < (3600 * 24 * 2.5)
+    return not too_recent and is_lucky_hour(dtime, threshold=thresh)
 
 
-def block_long_tweets(tweet):
-    if len(tweet) > 270:
-        print "Blocked long tweet!!\n\t", tweet
+def block_long_tweets(update):
+    if update is None:
         return None
-    return tweet
+    if len(update.message) > 270:
+        print("Blocked long tweet!!\n\t", tweet)
+        return None
+    return update
+
+
+def get_previous_update(db_filename):
+    conn = sqlite3.connect(db_filename)
+    curr = conn.cursor()
+    curr.execute("""
+        SELECT BookTitle, Progress, FullMessage, TimestampSec
+        FROM posts
+        ORDER BY TimestampSec DESC
+        LIMIT 1;
+    """)
+    update = Update.FromTuple(curr.fetchone())
+    conn.close()
+    return update
+
+
+def save_update(update, db_filename):
+    conn = sqlite3.connect(db_filename)
+    curr = conn.cursor()
+    curr.execute("""
+        INSERT INTO posts VALUES (?, ?, ?, ?)
+    """, update.ToTuple())
+    conn.commit()
+    conn.close()
 
 
 def main():
+    config_filename = sys.argv[1]
+    db_filename = sys.argv[2]
+
     one_hour = timedelta(hours=1)
     dtime = datetime.now()
-    for _ in range(500):
-        if decide_to_post(dtime):
-            print "NEXT POST AT:", dtime
-            break
-        dtime += one_hour
 
-    if not decide_to_post() and "force_run" not in sys.argv:
-        print "Decided not to post."
+    prev_update = get_previous_update(db_filename)
+
+    if (not decide_to_post(dtime, prev_update.time) and
+        "force_run" not in sys.argv):
+        print("READERBOT_DECLINE Decided not to post.")
+        dt = dtime
+        for _ in range(500):
+            if decide_to_post(dt, prev_update.time):
+                print("NEXT POST AT:", dt)
+                break
+            dt += one_hour
         sys.exit(0)
 
     tuples = get_csv_tuples()
-    library = BookCollection(tuples)
-    msg = None
+    library = BookCollection(tuples, int(time.mktime(dtime.timetuple())))
+    update = None
     r = random.random()
     if r < 0.8:
-        msg = block_long_tweets(library.current_read_msg())
-    if msg is None and r < 0.9:
-        msg = block_long_tweets(library.page_rate_msg())
-    if msg is None:
-        msg = block_long_tweets(library.num_to_go_msg())
-    if msg is None:
-        raise ValueError("No valid messages found in candidate set %s" % (
-                         str(library.messages()),))
-    print msg
-    print len(msg)
-    auth = get_auth(sys.argv[1])
+        update = block_long_tweets(library.current_read_msg())
+    if update is None and r < 0.9:
+        update = block_long_tweets(library.page_rate_msg())
+    if update is None:
+        update = block_long_tweets(library.num_to_go_msg())
+    if update is None:
+        raise ValueError("No valid messages found in book collection")
+    print(update.message)
+    print(len(update.message))
+    auth = get_auth(config_filename)
     api = tweepy.API(auth)
     if "test" not in sys.argv:
-        api.update_status(msg)
+        print("READERBOT_POSTING")
+        api.update_status(update.message)
+        save_update(update, db_filename)
+    else:
+        print(update.ToTuple())
 
 
 if __name__ == "__main__":
