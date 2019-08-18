@@ -280,11 +280,15 @@ def main():
     library = BookCollection(tuples, int(time.mktime(dtime.timetuple())))
     update = None
     r = random.random()
+    print("Random draw: %0.3d" % (r,))
     if r < 0.8:
+        print("Attempting 'current read' tweet")
         update = block_long_tweets(library.current_read_msg())
     if update is None and r < 0.9:
+        print("Attempting 'page rate' tweet")
         update = block_long_tweets(library.page_rate_msg())
     if update is None:
+        print("Attempting 'num to go' tweet")
         update = block_long_tweets(library.num_to_go_msg())
     if update is None:
         raise ValueError("No valid messages found in book collection")
