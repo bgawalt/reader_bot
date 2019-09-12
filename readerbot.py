@@ -296,7 +296,8 @@ def main():
             print("  Too long!")
         update = block_duplicate_tweets(update, prev_update)
         if update is None:
-            print("  A dupe!")
+            print("  READERBOT_DUPE Exiting without tweeting.", update.message)
+            sys.exit(0)
     if update is None and r < 0.9:
         print("Attempting 'page rate' tweet")
         update = block_long_tweets(library.page_rate_msg())
