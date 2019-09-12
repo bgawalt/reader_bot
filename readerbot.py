@@ -227,9 +227,17 @@ def block_long_tweets(update):
     if update is None:
         return None
     if len(update.message) > 270:
-        print("Blocked long tweet!!\n\t", tweet)
         return None
     return update
+
+
+def block_duplicate_tweets(curr_update, prev_update):
+    if curr_update is None:
+        return None
+    if (curr_update.book_title == prev_update.book_title and
+        curr_update.progress == prev_update.progress):
+        return None
+    return curr_update
 
 
 def get_previous_update(db_filename):
@@ -280,10 +288,15 @@ def main():
     library = BookCollection(tuples, int(time.mktime(dtime.timetuple())))
     update = None
     r = random.random()
-    print("Random draw: %0.3d" % (r,))
+    print("Random draw: %0.3f" % (r,))
     if r < 0.8:
         print("Attempting 'current read' tweet")
         update = block_long_tweets(library.current_read_msg())
+        if update is None:
+            print("  Too long!")
+        update = block_duplicate_tweets(update, prev_update)
+        if update is None:
+            print("  A dupe!")
     if update is None and r < 0.9:
         print("Attempting 'page rate' tweet")
         update = block_long_tweets(library.page_rate_msg())
