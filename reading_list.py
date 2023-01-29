@@ -1,7 +1,10 @@
 """Library for fetching and representing the reading list."""
 
 
+from __future__ import annotations
+
 import csv
+import dataclasses
 import random
 
 from urllib import request
@@ -13,53 +16,56 @@ READ_DATA_SHEET_ID = "193ip3sbePZb1kLdFA60VzbpeCzSwX7BD5dzPxsfM28Q"
 READ_DATA_SHEET_URL = "https://spreadsheets.google.com/feeds/download/spreadsheets/Export?key=%s&exportFormat=csv" % READ_DATA_SHEET_ID
 
 
-class Book(object):
-    "Turns a row-tuple into a single book: title, total pages, and read pages."
+@dataclasses.dataclass(frozen=True)
+class Book:
+    """One book from the reading list: title, total pages, and read pages."""
+    title: str  # (BGawalt sneaks both author and title into this field.)
+    pages_total: int
+    pages_read: int
 
-    def __init__(self, row):
+    @staticmethod
+    def from_csv_row(row: tuple[str, ...]) -> Book:
         if len(row) < 3:
             raise ValueError("Invalid row: %s" + str(row),)
-        self._title = row[0]
-        self._total = int(row[1].replace(",", ""))
-        self._read = int(row[2].replace(",", ""))
-        if self._read > self._total:
-            raise ValueError("Mismatch in Read and Total for row: %s" %
-                             (str(row),))
+        title = row[0]
+        total = int(row[1].replace(",", ""))
+        read = int(row[2].replace(",", ""))
+        return Book(title=title, pages_total=total, pages_read=read)
 
-    def title(self):
-        return self._title
+    def __post_init__(self):
+        if self.pages_read > self.pages_total:
+            raise ValueError(
+                "Mismatch in Read and Total: " +
+                f"{self.pages_read} vs. {self.pages_total}")
 
-    def pages_to_go(self):
-        return max([self.pages_total() - self.pages_read(), 0])
+    @property
+    def pages_to_go(self) -> int:
+        return max([self.pages_total - self.pages_read, 0])
 
-    def done(self):
-        return self.pages_total() == self.pages_read()
+    @property
+    def done(self) -> bool:
+        return self.pages_total == self.pages_read
 
-    def pages_total(self):
-        return self._total
-
-    def pages_read(self):
-        return self._read
-
-    def rounded_ratio(self):
-        # Fill in the blank: "Brian is ____ [book title]"
-        ratio = float(self.pages_read())/self.pages_total()
+    @property
+    def rounded_ratio(self) -> str:
+        """The string that fills in the blank: 'Brian is ____ [book title].'"""
+        ratio = float(self.pages_read) / self.pages_total
         if ratio == 0:
             return "not yet reading"
         elif ratio < 0.125:
             return "just starting"
         elif ratio < 0.375:
-            return "about a quarter through"
+            return "a quarter through"
         elif ratio < 0.625:
-            return "around halfway done with"
+            return "halfway done with"
         elif ratio < 0.875:
-            return "like three-quarters into"
+            return "three-quarters into"
         elif ratio < 1:
             return "almost done with"
         return "done with"
 
 
-class BookCollection(object):
+class BookCollection:
 
     def __init__(self, tuples, timestamp_sec):
         self._books = []
@@ -87,13 +93,13 @@ class BookCollection(object):
                 self._years_left = float(t[4])
             elif tid == 7:
                 self._finish_date = t[4]
-            book = Book(t)
-            if book.done():
+            book = Book.from_csv_row(t)
+            if book.done:
                 self._num_done += 1
-            if book.pages_read() > 0 and not book.done():
+            if book.pages_read > 0 and not book.done:
                 self._in_progress.append(book)
-            self._pages_read += book.pages_read()
-            self._pages_total += book.pages_total()
+            self._pages_read += book.pages_read
+            self._pages_total += book.pages_total
             self._books.append(book)
 
     def books(self):
@@ -110,11 +116,11 @@ class BookCollection(object):
             print("Empty in-progress list!")
             return None
         book = self._in_progress[random.randint(0, len(self._in_progress) - 1)]
-        days_left = int(book.pages_to_go()/self._page_rate) + 1
+        days_left = int(book.pages_to_go / self._page_rate) + 1
         msg = ("#ReaderBot: Brian is %s %s and should " +
                "finish in around %d days. https://goo.gl/pEH6yP") % (
-                    book.rounded_ratio(), book.title(), days_left)
-        return Update(book.title(), book.rounded_ratio(), msg, self._time)
+                    book.rounded_ratio, book.title, days_left)
+        return Update(book.title, book.rounded_ratio, msg, self._time)
 
     def page_rate_msg(self):
         msg = ("#ReaderBot: Brian has read %s pages across %d books since " +
@@ -144,7 +150,8 @@ class Update(object):
         return Update(title, prog, msg, time)
 
 
-def get_csv_tuples():
+def get_csv_tuples() -> list[tuple[str, ...]]:
+    """Loads the Google Sheets sheet as a list of tuples of strings."""
     sheet_response = request.urlopen(READ_DATA_SHEET_URL)
     encoding = sheet_response.headers.get_content_charset('utf-8')
     sheet_lines = sheet_response.read().decode(encoding).split("\n")
