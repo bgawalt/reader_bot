@@ -1,4 +1,5 @@
 __pycache__/
+*.secret
 *.db
 .DS_Store
 *.config

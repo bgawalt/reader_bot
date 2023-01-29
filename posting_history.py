@@ -32,7 +32,7 @@ class Post:
     timestamp_sec: int
 
     @staticmethod
-    def from_tuple(db_tuple) -> Post:
+    def from_tuple(db_tuple: tuple[str, str, str, str]) -> Post:
         """Parse a tuple from the SQLite table as a Post."""
         title, prog, msg, time = db_tuple
         return Post(title, prog, msg, int(time))
