@@ -9,6 +9,8 @@ import random
 
 from urllib import request
 
+import posting_history
+
 
 # Spreadsheet read in one row as a time, as tuples.
 # TODO: Move sheet ID to the config file
@@ -109,7 +111,7 @@ class BookCollection:
         msg = ("#ReaderBot: Brian has %d books left on his reading list. " +
                "He should finish them all by %s. https://goo.gl/pEH6yP") % (
                  len(self._books) - self._num_done, self._finish_date)
-        return Update("num_to_go", "num_to_go", msg, self._time)
+        return posting_history.Post("num_to_go", "num_to_go", msg, self._time)
 
     def current_read_msg(self):
         if not len(self._in_progress):
@@ -120,7 +122,8 @@ class BookCollection:
         msg = ("#ReaderBot: Brian is %s %s and should " +
                "finish in around %d days. https://goo.gl/pEH6yP") % (
                     book.rounded_ratio, book.title, days_left)
-        return Update(book.title, book.rounded_ratio, msg, self._time)
+        return posting_history.Post(
+            book.title, book.rounded_ratio, msg, self._time)
 
     def page_rate_msg(self):
         msg = ("#ReaderBot: Brian has read %s pages across %d books since " +
@@ -129,25 +132,7 @@ class BookCollection:
                     "{:,}".format(self._pages_read),
                     self._num_done + len(self._in_progress), self._page_rate,
                     float(30 * self._num_done) / (self._num_days))
-        return Update("page_rate", "page_rate", msg, self._time)
-
-
-# TODO: Move to `posting_timer` library.
-class Update(object):
-
-    def __init__(self, book_title, progress, message, timestamp_sec):
-        self.book_title = book_title
-        self.progress = progress
-        self.message = message
-        self.time = int(timestamp_sec)
-
-    def ToTuple(self):
-        return (self.book_title, self.progress, self.message, self.time)
-
-    @staticmethod
-    def FromTuple(db_tuple):
-        title, prog, msg, time = db_tuple
-        return Update(title, prog, msg, time)
+        return posting_history.Post("page_rate", "page_rate", msg, self._time)
 
 
 def get_csv_tuples() -> list[tuple[str, ...]]:
