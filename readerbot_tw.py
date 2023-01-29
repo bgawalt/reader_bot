@@ -1,4 +1,5 @@
-"""
+"""Post about the reading list to Twitter.
+
 Basic usage:
   python readerbot_tw.py config_file
 
@@ -27,13 +28,9 @@ Dependencies needed:
 """
 
 
-import hashlib
 import random
-import sqlite3
 import sys
 import time
-
-from datetime import datetime, timedelta
 
 import tweepy
 
@@ -94,7 +91,7 @@ def main():
         print("READERBOT_DECLINE Decided not to post.")
         dt = dtime
         for _ in range(500):
-            if decide_to_post(dt, prev_update.time):
+            if posting_history.decide_to_post(dt, prev_update.time):
                 print("NEXT POST AT:", dt)
                 break
             dt += one_hour

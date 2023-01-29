@@ -17,14 +17,11 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
-import random
 import sqlite3
-import sys
 import time
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
-import tweepy
 
 @dataclasses.dataclass(frozen=True)
 class Post:
