@@ -1,5 +1,19 @@
 # ReaderBot
 
+## TODO
+
+(I'm in the process of letting this post to Mastodon, so there's some 
+refactoring going on right now.)
+
+*  Document `reading_list` vs. `readerbot_tw`
+*  Make stateful timing of posts its own library
+*  Add `readerbot_md` for posting to Mastodon
+*  Use "f"-strings for formatting
+*  Type annotations
+*  Use dataclasses annotations
+
+## Description
+
 This is a utility that updates my Twitter feed with what I'm currently reading,
 with
 [tweets like these](https://twitter.com/search?q=from%3Abgawalt%20%23ReaderBot).
