@@ -1,8 +1,6 @@
 """Library for fetching and representing the reading list."""
 
 
-from __future__ import print_function
-
 import csv
 import random
 

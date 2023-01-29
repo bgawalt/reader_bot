@@ -27,8 +27,6 @@ Dependencies needed:
 """
 
 
-from __future__ import print_function
-
 import hashlib
 import random
 import sqlite3
