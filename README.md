@@ -5,12 +5,13 @@
 (I'm in the process of letting this post to Mastodon, so there's some 
 refactoring going on right now.)
 
-*  Document `reading_list` vs. `readerbot_tw`
-*  Make stateful timing of posts its own library
+*  Document `reading_list` vs. `readerbot_tw` vs. `posting_history`
 *  Add `readerbot_md` for posting to Mastodon
 *  Use "f"-strings for formatting
 *  Type annotations
 *  Use dataclasses annotations
+*  Remove Tweepy dependency
+
 
 ## Description
 
@@ -40,6 +41,7 @@ If you'd like to also start using this, it should be pretty easy!  Just copy
 the above spreadsheet's layout in your own Google sheet.  The dumbest part is
 just getting the OAuth credentials in place, but if you tweet at, or email me
 (bgawalt at gmail), I could help you make it through that.
+
 
 ## Dependencies
 
