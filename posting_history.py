@@ -9,7 +9,7 @@ Its schema should be:
         Progress text,
         FullMessage text,
         TimestampSec integer
-    );)
+    );
 """
 
 
