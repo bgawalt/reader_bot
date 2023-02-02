@@ -43,7 +43,7 @@ class Post:
             self.book_title, self.progress, self.message, self.timestamp_sec)
 
 
-def is_lucky_hour(dt: datetime, threshold: float):
+def is_lucky_hour(dt: datetime, threshold: float) -> bool:
     """Is the modulo-hash of the given datetime's YYYYMMDDHH low enough?"""
     denom = (2 ** 20)
     dt_str = dt.strftime("%Y%m%d%H")
@@ -52,12 +52,12 @@ def is_lucky_hour(dt: datetime, threshold: float):
     return mod_hash_val < (threshold * denom)
 
 
-def decide_to_post(dtime, prev_ts):
+def decide_to_post(now: datetime, prev_ts_sec: int) -> bool:
     """Is this currently a lucky hour?  Have we posted recently?"""
     thresh = 0.012
-    curr_time = time.mktime(dtime.timetuple())
-    too_recent = (curr_time - prev_ts) < (3600 * 24 * 2.5)
-    return not too_recent and is_lucky_hour(dtime, threshold=thresh)
+    now_ts_sec = time.mktime(now.timetuple())
+    too_recent = (now_ts_sec - prev_ts_sec) < (3600 * 24 * 2.5)
+    return not too_recent and is_lucky_hour(now, threshold=thresh)
 
 
 def get_previous_update(db_filename: str) -> Post:
