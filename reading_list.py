@@ -15,7 +15,9 @@ import posting_history
 # Spreadsheet read in one row as a time, as tuples.
 # TODO: Move sheet ID to the config file
 READ_DATA_SHEET_ID = "193ip3sbePZb1kLdFA60VzbpeCzSwX7BD5dzPxsfM28Q"
-READ_DATA_SHEET_URL = "https://spreadsheets.google.com/feeds/download/spreadsheets/Export?key=%s&exportFormat=csv" % READ_DATA_SHEET_ID
+READ_DATA_SHEET_URL = (
+    "https://spreadsheets.google.com/feeds/download/spreadsheets/"
+    f"Export?key={READ_DATA_SHEET_ID}&exportFormat=csv")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -28,7 +30,7 @@ class Book:
     @staticmethod
     def from_csv_row(row: tuple[str, ...]) -> Book:
         if len(row) < 3:
-            raise ValueError("Invalid row: %s" + str(row),)
+            raise ValueError(f"Invalid row: {row}")
         title = row[0]
         total = int(row[1].replace(",", ""))
         read = int(row[2].replace(",", ""))
@@ -108,9 +110,10 @@ class BookCollection:
         return self._books
 
     def num_to_go_msg(self):
-        msg = ("#ReaderBot: Brian has %d books left on his reading list. " +
-               "He should finish them all by %s. https://goo.gl/pEH6yP") % (
-                 len(self._books) - self._num_done, self._finish_date)
+        msg = (
+            f"#ReaderBot: Brian has {len(self._books) - self._num_done} books "
+            "left on his reading list. He should finish them all by "
+            f"{self._finish_date}. https://goo.gl/pEH6yP")
         return posting_history.Post("num_to_go", "num_to_go", msg, self._time)
 
     def current_read_msg(self):
@@ -119,19 +122,19 @@ class BookCollection:
             return None
         book = self._in_progress[random.randint(0, len(self._in_progress) - 1)]
         days_left = int(book.pages_to_go / self._page_rate) + 1
-        msg = ("#ReaderBot: Brian is %s %s and should " +
-               "finish in around %d days. https://goo.gl/pEH6yP") % (
-                    book.rounded_ratio, book.title, days_left)
+        msg = (
+            f"#ReaderBot: Brian is {book.rounded_ratio} {book.title} and "
+            f"should finish in around {days_left} days. https://goo.gl/pEH6yP")
         return posting_history.Post(
             book.title, book.rounded_ratio, msg, self._time)
 
     def page_rate_msg(self):
-        msg = ("#ReaderBot: Brian has read %s pages across %d books since " +
-                "Nov 12, 2016. That's %0.0f pages per day " +
-                "(%0.1f books per month). https://goo.gl/pEH6yP") % (
-                    "{:,}".format(self._pages_read),
-                    self._num_done + len(self._in_progress), self._page_rate,
-                    float(30 * self._num_done) / (self._num_days))
+        books_per_month = float(30 * self._num_done) / (self._num_days)
+        msg = (
+            f"#ReaderBot: Brian has read {self._pages_read:,} pages across "
+            f"{self._num_done + len(self._in_progress)} books since "
+            f"Nov 12, 2016. That's {self._page_rate:0.0} pages per day "
+            f"({books_per_month:0.1} books per month). https://goo.gl/pEH6yP")
         return posting_history.Post("page_rate", "page_rate", msg, self._time)
 
 

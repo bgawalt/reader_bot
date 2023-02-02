@@ -79,7 +79,7 @@ def main():
         tuples, int(time.mktime(dtime.timetuple())))
     update = None
     r = random.random()
-    print("Random draw: %0.3f" % (r,))
+    print(f"Random draw: {r:0.3f}")
     if r < 0.8:
         print("Attempting 'current read' post")
         update = block_long_posts(library.current_read_msg())
