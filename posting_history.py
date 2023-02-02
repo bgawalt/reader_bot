@@ -42,6 +42,12 @@ class Post:
         return (
             self.book_title, self.progress, self.message, self.timestamp_sec)
 
+    def is_duplicate(self, other: Post) -> bool:
+        """Does this Post match the other Post?"""
+        return (self.book_title == other.book_title
+                and self.progress == other.progress)
+
+
 
 def is_lucky_hour(dt: datetime, threshold: float) -> bool:
     """Is the modulo-hash of the given datetime's YYYYMMDDHH low enough?"""

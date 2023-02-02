@@ -70,15 +70,6 @@ def block_long_tweets(update):
     return update
 
 
-def block_duplicate_tweets(curr_update, prev_update):
-    if curr_update is None:
-        return None
-    if (curr_update.book_title == prev_update.book_title and
-        curr_update.progress == prev_update.progress):
-        return None
-    return curr_update
-
-
 def main():
     config_filename = sys.argv[1]
     db_filename = sys.argv[2]
@@ -110,9 +101,9 @@ def main():
         update = block_long_tweets(library.current_read_msg())
         if update is None:
             print("  Too long!")
-        update = block_duplicate_tweets(update, prev_update)
-        if update is None:
-            print("  READERBOT_DUPE Exiting without tweeting.", update.message)
+        if update.is_duplicate(prev_update):
+            print("  READERBOT_DUPE Exiting without tweeting.",
+                  update.message, prev_update.message, sep="\n")
             sys.exit(0)
     if update is None and r < 0.9:
         print("Attempting 'page rate' tweet")
