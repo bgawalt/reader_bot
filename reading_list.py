@@ -44,7 +44,7 @@ class Book:
 
     @property
     def pages_to_go(self) -> int:
-        return max([self.pages_total - self.pages_read, 0])
+        return max(self.pages_total - self.pages_read, 0)
 
     @property
     def done(self) -> bool:
