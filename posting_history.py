@@ -48,7 +48,6 @@ class Post:
                 and self.progress == other.progress)
 
 
-
 def is_lucky_hour(dt: datetime, threshold: float) -> bool:
     """Is the modulo-hash of the given datetime's YYYYMMDDHH low enough?"""
     denom = (2 ** 20)
