@@ -1,19 +1,49 @@
 # ReaderBot
 
+A bot that posts about my reading habit to my Mastodon (or Twitter).
+
+
+### Quickstart
+
+First, find the field `READ_DATA_SHEET_ID` in `reading_list.py` and make sure it
+points to your properly-formatted, world-readable Google Sheet book list.
+
+To post to Mastodon:
+
+```
+$ python3 readerbot_mdn.py user_cred.secret my_posts.db
+```
+
+To post to Twitter:
+
+```
+$ python3 readerbot_tw.py tw_oauth.secret my_posts.db
+```
+
+Where:
+
+*  `user_cred.secret` are a credential file for posting to your Mastodon
+    account, created with `Mastodon.py`.
+*  `tw_oauth.secret` is a manually-crafted text file with four OAuth values
+    used to post to your Twitter account.
+*  `my_posts.db` is a SQLite3 database file containing a particular table called
+    `posts`.
+
+Read on to learn mandatory details about all of these!
+
 ## TODO
 
 (I'm in the process of letting this post to Mastodon, so there's some 
 refactoring going on right now.)
 
 *  Document `reading_list` vs. `readerbot_tw` vs. `posting_history`
-*  Add `readerbot_md` for posting to Mastodon
-*  Use "f"-strings for formatting
+*  Pass in `READ_DATA_SHEET_ID`, the Google Sheets identifier, at run time
 *  Type annotations
 *  Use dataclasses annotations
 *  Remove Tweepy dependency
 
 
-## Description
+## Casual Description
 
 This is a utility that updates my social feeds (Twitter or Mastodon) with what
 I'm currently reading, with
@@ -27,9 +57,9 @@ it's just a Google Sheets set to "Anybody With The Link Can View."
 The bot then is able to read and parse that sheet as a CSV doc.  I've set it up
 to mostly just report what book I'm reading right now and how much longer I'll
 be reading it (based on an extremely crude average-pages-per-day metric).
-But sometimes it also just reports the total amount of reading I have planned
-for the near future, or the total amount of reading I've done since I started
-keeping track like this.
+But sometimes it also just reports the total amount of reading I've signed 
+myself up for, or the total amount of reading I've done since I started
+keeping track.
 
 I've set this script up to run automatically once per hour, though most hours it
 just decides not to send a tweet and exits immediately.  I've set the operating
@@ -41,6 +71,10 @@ the above spreadsheet's layout in your own Google sheet.  The dumbest part is
 just getting the OAuth credentials in place, but if you tweet at, or email me
 (bgawalt at gmail), I could help you make it through that.
 
+
+## Detailed description
+
+TK!
 
 ## Dependencies
 
