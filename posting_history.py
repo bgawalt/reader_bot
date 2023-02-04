@@ -47,7 +47,30 @@ class Post:
         return (self.book_title == other.book_title
                 and self.progress == other.progress)
 
+    def next_posting_timestamp_sec(
+        self, min_gap_days: float, mean_gap_days: float) -> int:
+        """When (seconds since epoch) should we allow the next post?"""
+        if mean_gap_days <= min_gap_days:
+            raise ValueError('mean gap must exceed min gap; '
+                             f'{mean_gap_days} vs. {min_gap_days}')
+        # Use this SHA-1 on this post's contents to pseudorandomly sample
+        # a value between zero and one; store it as `frac`:
+        hash_target = (self.book_title + self.progress
+                       + self.message + str(self.timestamp_sec))
+        hash_val = int(hashlib.sha1(hash_target.encode('utf=8')), 16)
+        denom = 1024  # ten bits is plenty of precision here
+        frac = float(hash_val % denom) / denom
+        # We want a pseudo-sample uniformly over a range that starts at
+        # `min_gap_days` and whose midpoint is `mean_gap_days`.
+        # That makes the width of that range is 2 * (`mean` - `min`).
+        width_days = 2 * (mean_gap_days - min_gap_days)
+        gap_days = min_gap_days + (frac * width_days)
+        sec_per_day = 24 * 3600
+        gap_sec = gap_days * sec_per_day
+        return int(self.timestamp_sec + gap_sec)
 
+
+# TODO: Deprecated; replace with `next_posting_timestamp_sec`
 def is_lucky_hour(dt: datetime, threshold: float) -> bool:
     """Is the modulo-hash of the given datetime's YYYYMMDDHH low enough?"""
     denom = (2 ** 20)
@@ -57,6 +80,7 @@ def is_lucky_hour(dt: datetime, threshold: float) -> bool:
     return mod_hash_val < (threshold * denom)
 
 
+# TODO: Deprecated; replace with `next_posting_timestamp_sec`
 def decide_to_post(now: datetime, prev_ts_sec: int) -> bool:
     """Is this currently a lucky hour?  Have we posted recently?"""
     thresh = 0.012
