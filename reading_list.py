@@ -20,6 +20,14 @@ READ_DATA_SHEET_URL = (
     f"Export?key={READ_DATA_SHEET_ID}&exportFormat=csv")
 
 
+def get_csv_tuples() -> list[tuple[str, ...]]:
+    """Loads the Google Sheets sheet as a list of tuples of strings."""
+    sheet_response = request.urlopen(READ_DATA_SHEET_URL)
+    encoding = sheet_response.headers.get_content_charset('utf-8')
+    sheet_lines = sheet_response.read().decode(encoding).split("\n")
+    return [t for t in csv.reader(sheet_lines)]
+
+
 @dataclasses.dataclass(frozen=True)
 class Book:
     """One book from the reading list: title, total pages, and read pages."""
@@ -136,11 +144,3 @@ class BookCollection:
             f"Nov 12, 2016. That's {self._page_rate:0.0} pages per day "
             f"({books_per_month:0.1} books per month). https://goo.gl/pEH6yP")
         return posting_history.Post("page_rate", "page_rate", msg, self._time)
-
-
-def get_csv_tuples() -> list[tuple[str, ...]]:
-    """Loads the Google Sheets sheet as a list of tuples of strings."""
-    sheet_response = request.urlopen(READ_DATA_SHEET_URL)
-    encoding = sheet_response.headers.get_content_charset('utf-8')
-    sheet_lines = sheet_response.read().decode(encoding).split("\n")
-    return [t for t in csv.reader(sheet_lines)]
