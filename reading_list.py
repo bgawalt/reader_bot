@@ -85,39 +85,21 @@ class Book:
 class BookCollection:
 
     def __init__(self, tuples, timestamp_sec):
-        self._books = []
-        self._in_progress = []
-        self._num_done = 0
-        self._pages_read = 0
-        self._pages_total = 0
         self._time = timestamp_sec
-        for tid, t in enumerate(tuples):
-            # Parse the derived values from Column E
-            if tid == 0:
-                # The first line is empty
-                continue
-            elif tid == 1:
-                self._total = int(t[4].replace(",", ""))
-            elif tid == 2:
-                self._read = int(t[4].replace(",", ""))
-            elif tid == 3:
-                self._num_days = int(t[4].replace(",", ""))
-            elif tid == 4:
-                self._page_rate = float(t[4])
-            elif tid == 5:
-                self._days_left = float(t[4])
-            elif tid == 6:
-                self._years_left = float(t[4])
-            elif tid == 7:
-                self._finish_date = t[4]
-            book = Book.from_csv_row(t)
-            if book.done:
-                self._num_done += 1
-            if book.pages_read > 0 and not book.done:
-                self._in_progress.append(book)
-            self._pages_read += book.pages_read
-            self._pages_total += book.pages_total
-            self._books.append(book)
+        # Parse the spreadsheet's formula-derived values in Column E:
+        self._total, self._read, self._num_days = (
+            int(t[4].replace(",", "")) for t in tuples[1:4])
+        self._page_rate, self._days_left, self._years_left = (
+            float(t[4]) for t in tuples[4:7])
+        self._finish_date = tuples[7][4]
+        # Parse the rest of the sheet:
+        self._books = tuple(Book.from_csv_row(t) for t in tuples[1:])
+        self._in_progress = tuple(
+            book for book in self._books
+            if (book.pages_read > 0 and not book.done))
+        self._num_done = sum(1 if book.done else 0 for book in self._books)
+        self._pages_read = sum(book.pages_read for book in self._books)
+        self._pages_total = sum(book.pages_total for book in self._books)
 
     def books(self):
         return self._books
