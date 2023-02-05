@@ -81,8 +81,8 @@ def main():
     auth = get_auth(config_filename)
     api = tweepy.API(auth)
     print("READERBOT_POSTING")
-    api.update_status(update.message)
-    posting_history.save_update(update, db_filename)
+    api.update_status(next_post.message)
+    posting_history.save_update(next_post, db_filename)
 
 
 if __name__ == "__main__":

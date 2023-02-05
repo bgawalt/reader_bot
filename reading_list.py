@@ -30,7 +30,7 @@ def get_csv_tuples() -> list[tuple[str, ...]]:
     sheet_response = request.urlopen(READ_DATA_SHEET_URL)
     encoding = sheet_response.headers.get_content_charset('utf-8')
     sheet_lines = sheet_response.read().decode(encoding).split("\n")
-    return [t for t in csv.reader(sheet_lines)]
+    return [tuple(t) for t in csv.reader(sheet_lines)]
 
 
 @dataclasses.dataclass(frozen=True)
