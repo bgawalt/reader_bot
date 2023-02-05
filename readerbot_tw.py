@@ -1,7 +1,9 @@
 """Post about the reading list to Twitter.
 
 Basic usage:
-  python readerbot_tw.py config_file
+  python readerbot_tw.py config_file db_file
+
+See README for all details.
 
 Add arguments `test` to block any posting, and `force_run` to prevent deciding
 not to post, e.g.:
@@ -9,10 +11,6 @@ not to post, e.g.:
   python readerbot_tw.py config_file db_file test
   python readerbot_tw.py config_file db_file force_run
   python readerbot_tw.py config_file db_file test force_run
-
-If you just want to know when to expect more posts, use the flag `timetable`
-
-  python readerbot.py timetable | grep POST
 
 DB schema:
 
@@ -62,67 +60,29 @@ def get_auth(config_file):
     return auth
 
 
-def block_long_tweets(update):
-    if update is None:
-        return None
-    if len(update.message) > 270:
-        return None
-    return update
-
-
 def main():
     config_filename = sys.argv[1]
     db_filename = sys.argv[2]
 
-    one_hour = timedelta(hours=1)
-    dtime = datetime.now()
+    dtime_now = datetime.now()
+    # Either get something to post, or an error message:
+    next_post, err_msg = reading_list.get_next_post(
+        current_time=dtime_now, db_filename=db_filename,
+        skip_gap_check=("force_run" in sys.argv)
+    )
 
-    prev_update = posting_history.get_previous_update(db_filename)
+    if next_post is None:
+        print("READERBOT_DECLINE", err_msg, sep="\n")
+        return
+    print(next_post.to_tuple())
+    if "test"  in sys.argv:
+        return
 
-    if (not posting_history.decide_to_post(dtime, prev_update.timestamp_sec)
-        and "force_run" not in sys.argv):
-        print("READERBOT_DECLINE Decided not to post.")
-        dt = dtime
-        for _ in range(500):
-            if posting_history.decide_to_post(dt, prev_update.timestamp_sec):
-                print("NEXT POST AT:", dt)
-                break
-            dt += one_hour
-        sys.exit(0)
-
-    tuples = reading_list.get_csv_tuples()
-    library = reading_list.BookCollection(
-        tuples, int(time.mktime(dtime.timetuple())))
-    update = None
-    r = random.random()
-    print(f"Random draw: {r:0.3f}")
-    if r < 0.8:
-        print("Attempting 'current read' tweet")
-        update = block_long_tweets(library.current_read_msg())
-        if update is None:
-            print("  Too long!")
-        if update.is_duplicate(prev_update):
-            print("  READERBOT_DUPE Exiting without tweeting.",
-                  update.message, prev_update.message, sep="\n")
-            sys.exit(0)
-    if update is None and r < 0.9:
-        print("Attempting 'page rate' tweet")
-        update = block_long_tweets(library.page_rate_msg())
-    if update is None:
-        print("Attempting 'num to go' tweet")
-        update = block_long_tweets(library.num_to_go_msg())
-    if update is None:
-        raise ValueError("No valid messages found in book collection")
-    print(update.message)
-    print(len(update.message))
     auth = get_auth(config_filename)
     api = tweepy.API(auth)
-    if "test" not in sys.argv:
-        print("READERBOT_POSTING")
-        api.update_status(update.message)
-        posting_history.save_update(update, db_filename)
-    else:
-        print(update.to_tuple())
+    print("READERBOT_POSTING")
+    api.update_status(update.message)
+    posting_history.save_update(update, db_filename)
 
 
 if __name__ == "__main__":

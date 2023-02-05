@@ -32,11 +32,9 @@ Dependencies needed:
 """
 
 
-import random
 import sys
-import time
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import mastodon
 
@@ -44,67 +42,28 @@ import posting_history
 import reading_list
 
 
-def block_long_posts(update):
-    if update is None:
-        return None
-    if len(update.message) > 270:
-        return None
-    return update
-
-
 def main():
     user_cred_filename = sys.argv[1]
     db_filename = sys.argv[2]
 
-    one_hour = timedelta(hours=1)
-    dtime = datetime.now()
+    dtime_now = datetime.now()
+    # Either get something to post, or an error message:
+    next_post, err_msg = reading_list.get_next_post(
+        current_time=dtime_now, db_filename=db_filename,
+        skip_gap_check=("force_run" in sys.argv)
+    )
 
+    if next_post is None:
+        print("READERBOT_DECLINE", err_msg, sep="\n")
+        return
+    print(next_post.to_tuple())
+    if "test"  in sys.argv:
+        return
+
+    print("READERBOT_POSTING")
     mdn = mastodon.Mastodon(access_token=user_cred_filename)
-
-    prev_update = posting_history.get_previous_update(db_filename)
-
-    if (not posting_history.decide_to_post(dtime, prev_update.timestamp_sec)
-        and "force_run" not in sys.argv):
-        print("READERBOT_DECLINE Decided not to post.")
-        dt = dtime
-        for _ in range(500):
-            if posting_history.decide_to_post(dt, prev_update.timestamp_sec):
-                print("NEXT POST AT:", dt)
-                break
-            dt += one_hour
-        sys.exit(0)
-
-    tuples = reading_list.get_csv_tuples()
-    library = reading_list.BookCollection(
-        tuples, int(time.mktime(dtime.timetuple())))
-    update = None
-    r = random.random()
-    print(f"Random draw: {r:0.3f}")
-    if r < 0.8:
-        print("Attempting 'current read' post")
-        update = block_long_posts(library.current_read_msg())
-        if update is None:
-            print("  Too long!")
-        if update.is_duplicate(prev_update):
-            print("  READERBOT_DUPE Exiting without posting.", update.message)
-            sys.exit(0)
-    if update is None and r < 0.9:
-        print("Attempting 'page rate' post")
-        update = block_long_posts(library.page_rate_msg())
-    if update is None:
-        print("Attempting 'num to go' post")
-        update = block_long_posts(library.num_to_go_msg())
-    if update is None:
-        raise ValueError("No valid messages found in book collection")
-    print(update.message)
-    print(len(update.message))
-
-    if "test" not in sys.argv:
-        print("READERBOT_POSTING")
-        mdn.status_post(status=update.message, visibility='public')
-        posting_history.save_update(update, db_filename)
-    else:
-        print(update.to_tuple())
+    mdn.status_post(status=next_post.message, visibility='public')
+    posting_history.save_update(next_post, db_filename)
 
 
 if __name__ == "__main__":

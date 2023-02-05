@@ -57,7 +57,8 @@ class Post:
         # a value between zero and one; store it as `frac`:
         hash_target = (self.book_title + self.progress
                        + self.message + str(self.timestamp_sec))
-        hash_val = int(hashlib.sha1(hash_target.encode('utf=8')), 16)
+        hash_val = int(
+            hashlib.sha1(hash_target.encode('utf-8')).hexdigest(), 16)
         denom = 1024  # ten bits is plenty of precision here
         frac = float(hash_val % denom) / denom
         # We want a pseudo-sample uniformly over a range that starts at
@@ -68,25 +69,6 @@ class Post:
         sec_per_day = 24 * 3600
         gap_sec = gap_days * sec_per_day
         return int(self.timestamp_sec + gap_sec)
-
-
-# TODO: Deprecated; replace with `next_posting_timestamp_sec`
-def is_lucky_hour(dt: datetime, threshold: float) -> bool:
-    """Is the modulo-hash of the given datetime's YYYYMMDDHH low enough?"""
-    denom = (2 ** 20)
-    dt_str = dt.strftime("%Y%m%d%H")
-    hash_val = int(hashlib.sha1(dt_str.encode('utf-8')).hexdigest(), 16)
-    mod_hash_val = hash_val % denom
-    return mod_hash_val < (threshold * denom)
-
-
-# TODO: Deprecated; replace with `next_posting_timestamp_sec`
-def decide_to_post(now: datetime, prev_ts_sec: int) -> bool:
-    """Is this currently a lucky hour?  Have we posted recently?"""
-    thresh = 0.012
-    now_ts_sec = time.mktime(now.timetuple())
-    too_recent = (now_ts_sec - prev_ts_sec) < (3600 * 24 * 2.5)
-    return not too_recent and is_lucky_hour(now, threshold=thresh)
 
 
 def get_previous_update(db_filename: str) -> Post:

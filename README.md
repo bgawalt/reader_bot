@@ -132,6 +132,9 @@ spreadsheet and parses it into nice Python objects:
     generates the messages that get posted to Mastodon/Twitter.  Note that these
     messages all include more hardcoded links to my spreadsheet, in `"goo.gl"`
     short form. More about these messages in the next subsection!
+*  The most helpful entry in this module is `get_next_post`, which stitches
+    together everything we're about to discuss to just hand you a post to
+    publish (or an explanation for why no post is available).
 
 **Note:** ReaderBot is extremely tightly coupled to this spreadsheet format!
 It's not smart at all! It's just referencing and parsing these fields by rote 
@@ -217,6 +220,13 @@ with fields matching the name and type of these four columns.
 (Note that `BookCollection.{num_to_go_msg, page_rate_msg}` use dummy placeholder
 values for `book_title` and `progress` when generating their `Post`s.)
 
+That class, `Post`, also defines the two-parameter `next_post_timestamp_sec`
+method which takes in requirements on (a) how many days the bot *must* stay
+silent after posting, via the `min_gap_days` parameter, and (b) the desired
+typical interarrival gap between posts, via the `mean_gap_days` parameter.
+The method hashes the four fields of `Post` to deterministically arrive at
+a timestamp when the next post should appear.
+
 The library functions `get_previous_update` and `save_update` perform the
 actual DB query operations. (Each function pulls up its own local connection
 and cursor on each call -- that's fine, since ReaderBot only calls each once
@@ -229,13 +239,15 @@ These two files, `readerbot_{mdn, tw}.py`, have genuine `main()` routines and
 are what you actually call when you want to run ReaderBot.
 Each has a hard-coded 80% chance of picking `current_read_msg` as its candidate
 post for this run, with 10% chances each for the other two slower-evolving
-messages.
+messages.  They both rely simply on `reading_list.get_next_post` to abstract
+away all the above detail and just retrieve something to post, or an error
+message to forward to the human in charge.
 
-They're both invokved from the command line with the same pair of positional
-arguments:
+They're both invoked from the command line with the same pair of required
+positional arguments, plus two optional ones:
 
 ```
-$ python3 readerbot_{venue}.py cred_file.secret post_history.db
+$ python3 readerbot_{venue}.py cred_file.secret post_history.db [test] [force_run]
 ```
 
 `post_history.db` is just the SQLite3 DB file described earlier. You can use
@@ -245,6 +257,13 @@ But `cred_file.secret`'s contents depend on whether you're posting to Mastodon
 or Twitter.  They both work on the principal that an *app* is posting on behalf
 of a *user* to the social media *server*.  You need public-private keys to
 establish both the app and user identities when authenticating with the server.
+
+The two optional arguments are:
+
+*  `test`: If you add this, everything runs *except* for actually posting to the
+    social media account and saving a new entry in the posting history.
+*  `force_run`: If you add this, the script ignores how long it's been since
+    the last post on file was published.
 
 #### Mastodon creds
 
@@ -332,5 +351,3 @@ though I can migrate off of that library, someday.  TODO!
 *  Use dataclasses annotations
 *  Remove Tweepy dependency
 *  Use JSON for Twitter cred file
-*  Move the shared contents of `readerbot_{mdn,tw}` into one post-generating
-    function.

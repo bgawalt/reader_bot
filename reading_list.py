@@ -1,12 +1,17 @@
-"""Library for fetching and representing the reading list."""
+"""Library for fetching, representing, and summarizing the reading list.
+
+The main attractions here are `get_next_post` and `READ_DATA_SHEET_ID`.
+"""
 
 
 from __future__ import annotations
 
 import csv
 import dataclasses
+import datetime
 import random
 
+from typing import Optional
 from urllib import request
 
 import posting_history
@@ -144,3 +149,58 @@ class BookCollection:
             f"Nov 12, 2016. That's {self._page_rate:0.0} pages per day "
             f"({books_per_month:0.1} books per month). https://goo.gl/pEH6yP")
         return posting_history.Post("page_rate", "page_rate", msg, self._time)
+
+
+def get_next_post(
+    current_time: datetime.datetime, db_filename: str,
+    min_gap_days: int = 2, mean_gap_days: int = 6, skip_gap_check: bool=False
+    ) -> tuple[Optional[posting_history.Post], str]:
+    """Either returns a post to publish, or an explanation for why not.
+
+    Args:
+        current_time: What time is it, right now, when we're trying to post?
+        db_filename: Path to the SQLite3 file containing posting history.
+        min_gap_days: Never return a post to publish if it's been fewer than
+            this many days since the last post was published.
+        mean_gap_days: The target interarrival time for posts, in days.
+        skip_gap_check: If True, ignore how long it's been since the last post
+            when trying to return a post for this run.
+    
+    Returns:
+        - First element is either a `posting_history.Post` to publish
+            immediately, or is `None`.
+        - Second element is a non-empty string iff the first element is `None`,
+            this string explaining why there's no post to publish right now.
+    """
+    prev_post = posting_history.get_previous_update(db_filename)
+    next_post_timestamp = prev_post.next_posting_timestamp_sec(
+        min_gap_days=min_gap_days, mean_gap_days=mean_gap_days)
+    if not skip_gap_check and (current_time.timestamp() < next_post_timestamp):
+        prev_datetime = datetime.datetime.fromtimestamp(prev_post.timestamp_sec)
+        next_datetime = datetime.datetime.fromtimestamp(next_post_timestamp)
+        too_soon_msg = (
+            "Too soon to post again.\n"
+            f"Previous post: {prev_datetime}\n"
+            f"Next post after: {next_datetime}")
+        return (None, too_soon_msg)
+    # Cool -- it's an acceptable time to post.
+    # Let's see what's going on in the reading list:
+    tuples = get_csv_tuples()
+    library = BookCollection(tuples, int(current_time.timestamp()))
+    candidate_post = None
+    r = random.random()
+    if r < 0.8:
+        candidate_post = library.current_read_msg()
+    if candidate_post is None and r < 0.9:
+        candidate_post = library.page_rate_msg()
+    if candidate_post is None:
+        candidate_post = library.num_to_go_msg()
+    # Check for dups:
+    if candidate_post.is_duplicate(prev_post):
+        dup_msg = (
+            "Duplicate message attempt:\n"
+            f"Prev post: {prev_post.message}\n"
+            f"Attempted post: {candidate_post.message}"
+        )
+        return (None, dup_msg)
+    return candidate_post, ""
