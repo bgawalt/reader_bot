@@ -128,8 +128,8 @@ class BookCollection:
         msg = (
             f"#ReaderBot: Brian has read {self._pages_read:,} pages across "
             f"{self._num_done + len(self._in_progress)} books since "
-            f"Nov 12, 2016. That's {self._page_rate:0.0} pages per day "
-            f"({books_per_month:0.1} books per month). https://goo.gl/pEH6yP")
+            f"Nov 12, 2016. That's {self._page_rate:0.1f} pages per day "
+            f"({books_per_month:0.1f} books per month). https://goo.gl/pEH6yP")
         return posting_history.Post("page_rate", "page_rate", msg, self._time)
 
 
