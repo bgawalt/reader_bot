@@ -46,8 +46,8 @@ import sys
 
 from datetime import datetime, timezone
 
-#import posting_history
-#import reading_list
+import posting_history
+import reading_list
 
 
 def get_config(filename: str) -> dict[str, str]:
@@ -78,6 +78,21 @@ def main():
     user_cred_filename = sys.argv[1]
     db_filename = sys.argv[2]
 
+    dtime_now = datetime.now()
+    # Either get something to post, or an error message:
+    next_post, err_msg = reading_list.get_next_post(
+        current_time=dtime_now, db_filename=db_filename,
+        skip_gap_check=("force_run" in sys.argv)
+    )
+
+    if next_post is None:
+        print("READERBOT_DECLINE", err_msg, sep="\n")
+        return
+    print(next_post.to_tuple())
+    if "test"  in sys.argv:
+        return
+
+    print("READERBOT_POSTING")
     config_kv = get_config(user_cred_filename)
     host = config_kv["ATP_HOST"]
     username = config_kv["ATP_USERNAME"]
@@ -86,11 +101,8 @@ def main():
     auth_token, did = get_auth_token_and_did(
         host=host, username=username, password=pword)
 
-    dtime_now = datetime.now(timezone.utc)
     timestamp = dtime_now.isoformat().replace('+00:00', 'Z')
     headers = {"Authorization": f"Bearer {auth_token}"}
-    post_contents = (
-        f"I'm posting this from python and it's {timestamp} in Greenwich")
     post_params = {
         "collection": "app.bsky.feed.post",
         "$type": "app.bsky.feed.post",
@@ -98,7 +110,7 @@ def main():
         "record": {
             "$type": "app.bsky.feed.post",
             "createdAt": timestamp,
-            "text": post_contents
+            "text": next_post.message
         }
     }
     resp = requests.post(
@@ -108,6 +120,10 @@ def main():
     )
     print(resp.status_code)
     print(resp)
+    if resp.status_code != 200:
+        raise RuntimeError("Posting failed!! POST_FAIL")
+    posting_history.save_update(next_post, db_filename)
+
 
 if __name__ == "__main__":
     main()
