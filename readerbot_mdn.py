@@ -1,7 +1,7 @@
 """Post about the reading list to Mastodon.
 
 Basic usage:
-  python readerbot_tw.py user_cred.secret db_file
+  python readerbot_mdn.py user_cred.secret db_file
 
 These two positional arguments are:
 
@@ -13,9 +13,9 @@ These two positional arguments are:
 Add arguments `test` to block any posting, and `force_run` to prevent deciding
 not to post, e.g.:
 
-  python readerbot_tw.py user_cred.secret db_file test
-  python readerbot_tw.py user_cred.secret db_file force_run
-  python readerbot_tw.py user_cred.secret db_file test force_run
+  python readerbot_mdn.py user_cred.secret db_file test
+  python readerbot_mdn.py user_cred.secret db_file force_run
+  python readerbot_mdn.py user_cred.secret db_file test force_run
 
 
 DB schema:
