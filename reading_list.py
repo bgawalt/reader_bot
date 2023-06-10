@@ -171,9 +171,14 @@ def get_next_post(
     library = BookCollection(tuples, int(current_time.timestamp()))
     candidate_post = None
     r = random.random()
-    if r < 0.8:
+    print(f"Rolled a {r:0.4f}")
+    if r < 0.9:
         candidate_post = library.current_read_msg()
-    if candidate_post is None and r < 0.9:
+        if candidate_post is None:
+            print("No currently-reading book to post!")
+            r = 0.9 + 0.1 * random.random()
+            print(f"Re-rolled a {r:0.4f}")
+    if candidate_post is None and r < 0.95:
         candidate_post = library.page_rate_msg()
     if candidate_post is None:
         candidate_post = library.num_to_go_msg()
