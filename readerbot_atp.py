@@ -47,7 +47,6 @@ import requests
 import sys
 import typing
 
-from collections.abc import Sequence
 from datetime import datetime, timezone
 
 import posting_history
@@ -110,7 +109,8 @@ class RichTextLink:
 @dataclasses.dataclass
 class RichTextMessage:
     message_text: str
-    links: Sequence[RichTextLink]
+    # TODO: ugh, py3.7 is killing me. Make this a abc.Sequence when it's easier.
+    links: typing.List[RichTextLink]
 
     def to_json(self, timestamp_iso: str):
         # TODO type annotation
@@ -148,7 +148,8 @@ def enrich_message(message: str) -> RichTextMessage:
     )
     return RichTextMessage(
         message_text=(msg_unclosed + "]"),
-        links=(hashtag_link, sheet_link)
+        # TODO: ugh, py3.7 is killing me. Make this a tuple when it's easier.
+        links=[hashtag_link, sheet_link]
     )
 
 
