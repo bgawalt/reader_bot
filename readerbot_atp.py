@@ -45,6 +45,7 @@ import dataclasses
 import pprint
 import requests
 import sys
+import typing
 
 from collections.abc import Sequence
 from datetime import datetime, timezone
@@ -53,7 +54,8 @@ import posting_history
 import reading_list
 
 
-def get_config(filename: str) -> dict[str, str]:
+# TODO: Bring back type annotations when my server is upgraded past Python 3.7
+def get_config(filename: str) -> typing.Dict[str, str]:
     with open(filename, 'r') as infile:
         config = {}
         for line in infile:
@@ -63,7 +65,7 @@ def get_config(filename: str) -> dict[str, str]:
 
 
 def get_auth_token_and_did(
-    host: str, username: str, password: str) -> tuple[str, str]:
+    host: str, username: str, password: str) -> typing.Tuple[str, str]:
     """Returns (auth token, dist user id) pair for BSky server, user, pword."""
     token_request_params = {"identifier": username, "password": password}
     resp = requests.post(
