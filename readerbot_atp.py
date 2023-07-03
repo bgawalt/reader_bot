@@ -120,9 +120,6 @@ class RichTextMessage:
         }
 
 
-# Test run produced, July 1 2023:
-# {'uri': 'at://did:plc:43nhmzgiugf65gwskj3kpfj5/app.bsky.feed.post/3jzi3r7uirc2d',
-#  'cid': 'bafyreid4tnueqsgcg2meqq5cut4bf5vkyhqgdiwxl737coajkfzyo3wuke'}
 def enrich_message(message: str) -> RichTextMessage:
     """Adds hyperlinks as rich text (#ReaderBot hashtag and the sheets URL)."""
     if not message.startswith("#ReaderBot"):
@@ -157,7 +154,7 @@ def main():
     user_cred_filename = sys.argv[1]
     db_filename = sys.argv[2]
 
-    dtime_now = datetime.now()
+    dtime_now = datetime.now(timezone.utc)
     # Either get something to post, or an error message:
     next_post, err_msg = reading_list.get_next_post(
         current_time=dtime_now, db_filename=db_filename,
@@ -181,7 +178,7 @@ def main():
     auth_token, did = get_auth_token_and_did(
         host=host, username=username, password=pword)
 
-    timestamp_iso = dtime_now.isoformat().replace('+00:00', 'Z')
+    timestamp_iso = dtime_now.isoformat().replace("+00:00", "Z")
     headers = {"Authorization": f"Bearer {auth_token}"}
     post_params = {
         "collection": "app.bsky.feed.post",
