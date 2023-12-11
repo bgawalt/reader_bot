@@ -129,7 +129,7 @@ def enrich_message(message: str) -> RichTextMessage:
         raise ValueError(f"message must start with '#ReaderBot': {message}")
     hashtag_link = RichTextLink(
         # TODO: Make this URL depend on the actual ATProto host.
-        url="https://bsky.app/search?q=%23ReaderBot",
+        url="https://bsky.app/search?q=ReaderBot",
         byte_start=0,
         byte_end=len("#ReaderBot".encode("UTF-8"))
     )
