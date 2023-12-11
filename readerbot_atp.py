@@ -118,6 +118,7 @@ class RichTextMessage:
             "$type": "app.bsky.feed.post",
             "createdAt": timestamp_iso,
             "text": self.message_text,
+            "langs": ["en-US"],
             "facets": [link.to_json() for link in self.links]
         }
 

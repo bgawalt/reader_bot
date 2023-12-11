@@ -172,11 +172,11 @@ def get_next_post(
     candidate_post = None
     r = random.random()
     print(f"Rolled a {r:0.4f}")
-    if r < 0.9:
+    if r < 0.96:
         candidate_post = library.current_read_msg()
         if candidate_post is None:
             print("No currently-reading book to post!")
-            r = 0.9 + 0.1 * random.random()
+            r = 0.96 + 0.04 * random.random()
             print(f"Re-rolled a {r:0.4f}")
     if candidate_post is None and r < 0.95:
         candidate_post = library.page_rate_msg()
