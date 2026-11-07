@@ -50,7 +50,7 @@ def main():
 
     dtime_now = datetime.now(timezone.utc)
     # Either get something to post, or an error message:
-    next_post, _ = reading_list.get_next_post(
+    next_post, err_msg = reading_list.get_next_post(
         current_time=dtime_now, db_filename=db_filename,
         skip_gap_check=("force_run" in sys.argv)
     )
