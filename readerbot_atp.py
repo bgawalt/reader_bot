@@ -154,6 +154,10 @@ def enrich_message(message: str) -> RichTextMessage:
     )
 
 
+_MSG_PREFIX = "#ReaderBot: "
+_MSG_SUFFIX = " https://goo.gl/pEH6yP"
+
+
 def main():
     user_cred_filename = sys.argv[1]
     db_filename = sys.argv[2]
@@ -184,11 +188,12 @@ def main():
 
     timestamp_iso = dtime_now.isoformat().replace("+00:00", "Z")
     headers = {"Authorization": f"Bearer {auth_token}"}
+    msg = _MSG_PREFIX + next_post.message + _MSG_SUFFIX
     post_params = {
         "collection": "app.bsky.feed.post",
         "$type": "app.bsky.feed.post",
         "repo": "{}".format(did),
-        "record": enrich_message(next_post.message).to_json(timestamp_iso)
+        "record": enrich_message(msg).to_json(timestamp_iso)
     }
     resp = requests.post(
         f"{host}/xrpc/com.atproto.repo.createRecord",

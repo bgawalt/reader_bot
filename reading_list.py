@@ -106,9 +106,9 @@ class BookCollection:
 
     def num_to_go_msg(self):
         msg = (
-            f"#ReaderBot: Brian has {len(self._books) - self._num_done} books "
+            f"Brian has {len(self._books) - self._num_done} books "
             "left on his reading list. He should finish them all by "
-            f"{self._finish_date}. https://goo.gl/pEH6yP")
+            f"{self._finish_date}.")
         return posting_history.Post("num_to_go", "num_to_go", msg, self._time)
 
     def current_read_msg(self):
@@ -118,18 +118,18 @@ class BookCollection:
         book = self._in_progress[random.randint(0, len(self._in_progress) - 1)]
         days_left = int(book.pages_to_go / self._page_rate) + 1
         msg = (
-            f"#ReaderBot: Brian is {book.rounded_ratio} {book.title} and "
-            f"should finish in around {days_left} days. https://goo.gl/pEH6yP")
+            f"Brian is {book.rounded_ratio} {book.title} and should finish in "
+            f"around {days_left} days.")
         return posting_history.Post(
             book.title, book.rounded_ratio, msg, self._time)
 
     def page_rate_msg(self):
         books_per_month = float(30 * self._num_done) / (self._num_days)
         msg = (
-            f"#ReaderBot: Brian has read {self._pages_read:,} pages across "
+            f"Brian has read {self._pages_read:,} pages across "
             f"{self._num_done + len(self._in_progress)} books since "
             f"Nov 12, 2016. That's {self._page_rate:0.1f} pages per day "
-            f"({books_per_month:0.1f} books per month). https://goo.gl/pEH6yP")
+            f"({books_per_month:0.1f} books per month).")
         return posting_history.Post("page_rate", "page_rate", msg, self._time)
 
 
